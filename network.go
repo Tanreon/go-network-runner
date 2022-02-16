@@ -1,4 +1,4 @@
-package network
+package network_runner
 
 import (
 	"github.com/nadoo/glider/proxy"
