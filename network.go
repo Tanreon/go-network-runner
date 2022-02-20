@@ -9,28 +9,42 @@ import (
 	"github.com/nadoo/glider/rule"
 )
 
-//type DirectRunner struct {
-//	client *resty.Client
-//}
+type DialOptions struct {
+	DialTimeout  int
+	RelayTimeout int
+	Strategy     string
+}
 
-func NewDirectDialer() (dialer *rule.Proxy, err error) {
+func NewDirectDialer(options ...DialOptions) (dialer *rule.Proxy, err error) {
+	dialTimeout := 60
+	relayTimeout := 60
+
+	if len(options) > 0 {
+		dialTimeout = options[0].DialTimeout
+		relayTimeout = options[0].RelayTimeout
+	}
+
 	newProxy := rule.NewProxy(nil, &rule.Strategy{
-		DialTimeout:  60, // sec
-		RelayTimeout: 60, // sec
+		DialTimeout:  dialTimeout,  // sec
+		RelayTimeout: relayTimeout, // sec
 	}, nil)
 	newProxy.Check()
 
 	return newProxy, nil
 }
 
-//type ProxyRunner struct {
-//	client *resty.Client
-//}
+func NewProxyDialers(forwards []string, options ...DialOptions) (dialer *rule.Proxy, err error) {
+	dialTimeout := 10
+	strategy := "ha"
 
-func NewProxyDialers(forwards []string, strategy string) (dialer *rule.Proxy, err error) {
+	if len(options) > 0 {
+		dialTimeout = options[0].DialTimeout
+		strategy = options[0].Strategy
+	}
+
 	newProxy := rule.NewProxy(forwards, &rule.Strategy{
-		DialTimeout: 10, // sec
-		Strategy:    strategy,
+		DialTimeout: dialTimeout, // sec
+		Strategy:    strategy,    // rr, ha, lha, dh
 	}, nil)
 	newProxy.Check()
 
