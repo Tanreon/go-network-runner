@@ -1,4 +1,4 @@
-module network_runner
+module github.com/Tanreon/go-network-runner
 
 go 1.16
 
