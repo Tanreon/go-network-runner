@@ -10,7 +10,7 @@ type IDialOptions interface {
 	RelayTimeout() int
 }
 
-type IDirectDialOptions struct {
+type IDirectDialOptions interface {
 	IDialOptions
 }
 
@@ -39,11 +39,15 @@ func (d *DirectDialOptions) RelayTimeout() int {
 	return *d.relayTimeout
 }
 
+func NewDirectDialOptions() IDirectDialOptions {
+	return &DirectDialOptions{}
+}
+
 type IProxyDialOptions interface {
 	IDialOptions
 
 	IsStrategySet() bool
-	SetStrategy(strategy string)
+	SetStrategy(strategy string) error
 	Strategy() string // rr, ha, lha, dh
 
 	IsCheckUrlSet() bool
@@ -186,4 +190,8 @@ func (p *ProxyDialOptions) SetCheckMaxFailures(value int) {
 }
 func (p *ProxyDialOptions) MaxFailures() int {
 	return *p.maxFailures
+}
+
+func NewProxyDialOptions() IProxyDialOptions {
+	return &ProxyDialOptions{}
 }
