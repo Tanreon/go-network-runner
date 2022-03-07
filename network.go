@@ -1,6 +1,8 @@
 package network_runner
 
 import (
+	"errors"
+
 	"github.com/nadoo/glider/proxy"
 	"github.com/nadoo/glider/proxy/http"
 	"github.com/nadoo/glider/proxy/socks5"
@@ -9,43 +11,78 @@ import (
 	"github.com/nadoo/glider/rule"
 )
 
+var ErrIncorrectStrategyMethod = errors.New("INCORRECT_STRATEGY_TYPE")
+
 type DialOptions struct {
 	DialTimeout  int
 	RelayTimeout int
 	Strategy     string
 }
 
-func NewDirectDialer(options ...DialOptions) (dialer *rule.Proxy, err error) {
-	dialTimeout := 60
-	relayTimeout := 60
+func NewDirectDialer(options ...IDirectDialOptions) (dialer *rule.Proxy, err error) {
+	ruleStrategy := rule.Strategy{}
 
 	if len(options) > 0 {
-		dialTimeout = options[0].DialTimeout
-		relayTimeout = options[0].RelayTimeout
+		directDialOptions := options[0]
+
+		if directDialOptions.IsDialTimeoutSet() {
+			ruleStrategy.DialTimeout = directDialOptions.DialTimeout()
+		} else {
+			ruleStrategy.DialTimeout = 30
+		}
+		if directDialOptions.IsRelayTimeoutSet() {
+			ruleStrategy.RelayTimeout = directDialOptions.RelayTimeout()
+		} else {
+			ruleStrategy.RelayTimeout = 60
+		}
 	}
 
-	newProxy := rule.NewProxy(nil, &rule.Strategy{
-		DialTimeout:  dialTimeout,  // sec
-		RelayTimeout: relayTimeout, // sec
-	}, nil)
+	newProxy := rule.NewProxy(nil, &ruleStrategy, nil)
 	newProxy.Check()
 
 	return newProxy, nil
 }
 
-func NewProxyDialers(forwards []string, options ...DialOptions) (dialer *rule.Proxy, err error) {
-	dialTimeout := 10
-	strategy := "ha"
+func NewProxyDialers(forwards []string, options ...IProxyDialOptions) (dialer *rule.Proxy, err error) {
+	ruleStrategy := rule.Strategy{}
 
 	if len(options) > 0 {
-		dialTimeout = options[0].DialTimeout
-		strategy = options[0].Strategy
+		proxyDialOptions := options[0]
+
+		if proxyDialOptions.IsStrategySet() {
+			ruleStrategy.Strategy = proxyDialOptions.Strategy()
+		} else {
+			ruleStrategy.Strategy = "rr"
+		}
+		if proxyDialOptions.IsCheckUrlSet() {
+			ruleStrategy.Check = proxyDialOptions.CheckUrl()
+		}
+		if proxyDialOptions.IsCheckIntervalSet() {
+			ruleStrategy.CheckInterval = proxyDialOptions.CheckInterval()
+		}
+		if proxyDialOptions.IsCheckTimeoutSet() {
+			ruleStrategy.CheckTimeout = proxyDialOptions.CheckTimeout()
+		}
+		if proxyDialOptions.IsCheckToleranceSet() {
+			ruleStrategy.CheckTolerance = proxyDialOptions.CheckTolerance()
+		}
+		if proxyDialOptions.IsCheckDisabledOnlySet() {
+			ruleStrategy.CheckDisabledOnly = proxyDialOptions.CheckDisabledOnly()
+		}
+		if proxyDialOptions.IsCheckMaxFailuresSet() {
+			ruleStrategy.MaxFailures = proxyDialOptions.MaxFailures()
+		}
+		if proxyDialOptions.IsDialTimeoutSet() {
+			ruleStrategy.DialTimeout = proxyDialOptions.DialTimeout()
+		} else {
+			ruleStrategy.DialTimeout = 10
+		}
+		if proxyDialOptions.IsRelayTimeoutSet() {
+			ruleStrategy.RelayTimeout = proxyDialOptions.RelayTimeout()
+		}
 	}
 
-	newProxy := rule.NewProxy(forwards, &rule.Strategy{
-		DialTimeout: dialTimeout, // sec
-		Strategy:    strategy,    // rr, ha, lha, dh
-	}, nil)
+	newProxy := rule.NewProxy(forwards, &ruleStrategy, nil)
 	newProxy.Check()
 
 	return newProxy, nil
